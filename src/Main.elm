@@ -7,10 +7,8 @@ import Html.Attributes exposing (href)
 import Task
 import Navigation exposing (Location, newUrl)
 import Http
-import Json.Decode as Decode exposing (Decoder)
-import Json.Decode.Pipeline exposing (requiredAt)
-import Json.Encode as Encode
 
+import Qiita.AccessToken
 import Routing exposing (Route(..), routeToPath)
 import Endpoints exposing (Endpoints)
 import Secrets
@@ -76,7 +74,7 @@ type Msg
     | RedirectToQiita
     | ClickLink String
     | GetAccessToken String
-    | GotAccessToken (Result Http.Error AccessTokenResponse)
+    | GotAccessToken (Result Http.Error Qiita.AccessToken.Response)
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -91,7 +89,16 @@ update msg model =
         ClickLink url ->
             model ! [newUrl url]
         GetAccessToken code ->
-            model ! [getAccessToken model Secrets.clientId Secrets.clientSecret code]
+            let
+                request =
+                    { clientId = Secrets.clientId
+                    , clientSecret = Secrets.clientSecret
+                    , code = code
+                    }
+                cmd =
+                    Qiita.AccessToken.getAccessToken GotAccessToken request
+            in
+                model ! [cmd]
         GotAccessToken (Ok response) ->
             { model | accessToken = response.token } ! [Navigation.newUrl "/main"]
         GotAccessToken (Err e) ->
@@ -131,46 +138,6 @@ main =
         , update = update
         , subscriptions = always Sub.none
         }
-
-
-
-getAccessToken: Model -> String -> String -> String -> Cmd Msg
-getAccessToken model clientId clientSecret code =
-    let
-        url =
-            model.endpoints.accessToken
-        encode =
-            accessTokenEncoder clientId clientSecret code
-        body =
-            Http.stringBody "application/json" (Encode.encode 4 encode)
-        request =
-            Http.post url body accessTokenDecoder
-    in
-        Http.send GotAccessToken request
-
-
-type alias AccessTokenResponse =
-    { clientId: String
-    , scopes: List String
-    , token: String
-    }
-
-
-accessTokenDecoder: Decoder AccessTokenResponse
-accessTokenDecoder =
-    Decode.succeed AccessTokenResponse
-        |> requiredAt [ "client_id" ] Decode.string
-        |> requiredAt [ "scopes" ] (Decode.list Decode.string)
-        |> requiredAt [ "token" ] Decode.string
-
-
-accessTokenEncoder: String -> String -> String -> Encode.Value
-accessTokenEncoder clientId clientSecret code =
-    Encode.object
-        [ ("client_id", Encode.string clientId)
-        , ("client_secret", Encode.string clientSecret)
-        , ("code", Encode.string code)
-        ]
 
 
 send: Msg -> Cmd Msg
