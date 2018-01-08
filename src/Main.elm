@@ -8,9 +8,9 @@ import Task
 import Navigation exposing (Location, newUrl)
 import Http
 
+import Qiita.Endpoints
 import Qiita.AccessToken
 import Routing exposing (Route(..), routeToPath)
-import Endpoints exposing (Endpoints)
 import Secrets
 
 ---- MODEL ----
@@ -18,7 +18,6 @@ import Secrets
 
 type alias Model =
     { route: Route
-    , endpoints: Endpoints
     , accessToken: String
     }
 
@@ -26,7 +25,6 @@ type alias Model =
 initialModel: Route -> Model
 initialModel route =
     { route = route
-    , endpoints = Endpoints.init "https://qiita.com/"
     , accessToken = ""
     }
 
@@ -71,7 +69,6 @@ parseLocation model location =
 type Msg
     = Noop
     | LocationChange Location
-    | RedirectToQiita
     | ClickLink String
     | GetAccessToken String
     | GotAccessToken (Result Http.Error Qiita.AccessToken.Response)
@@ -84,8 +81,6 @@ update msg model =
             model ! []
         LocationChange location ->
             (parseLocation (Just model) location) ! []
-        RedirectToQiita ->
-            model ! [send <| ClickLink (model.endpoints.login Secrets.clientId)]
         ClickLink url ->
             model ! [newUrl url]
         GetAccessToken code ->
@@ -124,7 +119,7 @@ view model =
 top: Model -> Html Msg
 top model =
     div []
-        [ a [ href (model.endpoints.login Secrets.clientId) ] [ text "Login to Qiita" ]
+        [ a [ href (Qiita.Endpoints.authorize Secrets.clientId "read_qiita") ] [ text "Login to Qiita" ]
         ]
 
 ---- PROGRAM ----
