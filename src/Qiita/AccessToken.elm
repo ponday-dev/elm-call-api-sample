@@ -50,13 +50,11 @@ responseDecoder =
 -- post request
 getAccessToken: (Result Http.Error Response -> a) -> Request -> Cmd a
 getAccessToken msg requestBody =
-    let
-        encoder =
-            requestEncoder requestBody
-        body =
-            Http.stringBody "application/json" (Encode.encode 4 encoder)
-        request =
-            Http.post accessTokens body responseDecoder
-    in
-        Http.send msg request
-        
+    requestBody
+        |> requestEncoder
+        |> Encode.encode 4
+        |> Http.stringBody "application/json"
+        |> Http.post accessTokens
+        |> \builder -> builder responseDecoder
+        |> Http.send msg
+
