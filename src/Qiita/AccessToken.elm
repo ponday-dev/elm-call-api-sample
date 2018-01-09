@@ -55,6 +55,6 @@ getAccessToken msg requestBody =
         |> Encode.encode 4
         |> Http.stringBody "application/json"
         |> Http.post accessTokens
-        |> \builder -> builder responseDecoder
+        |> (|>) responseDecoder
         |> Http.send msg
 
