@@ -18,3 +18,14 @@ authorize clientId scope =
 accessTokens: String
 accessTokens =
     baseUrl ++ "/api/v2/access_tokens"
+
+
+myItems: Int -> Int -> String
+myItems page perPage =
+    baseUrl
+        ++ "/api/v2/authenticated_user/items"
+        ++ "?page="
+        ++ (toString page)
+        ++ "&per_page="
+        ++ (toString perPage)
+
