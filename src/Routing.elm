@@ -6,7 +6,7 @@ import UrlParser exposing (Parser, parsePath ,oneOf, map, s, top, string, (<?>),
 type Route
     = TopRoute
     | LoginRoute (Maybe String)
-    | MainRoute
+    | ArticlesRoute
     | NotFoundRoute
 
 
@@ -15,7 +15,7 @@ matcher =
     oneOf
         [ map TopRoute top
         , map LoginRoute (s (routeToPath <| LoginRoute <| Just "") <?> stringParam "code")
-        , map MainRoute (s "main")
+        , map ArticlesRoute (s <| routeToPath ArticlesRoute)
         ]
 
 
@@ -35,7 +35,7 @@ routeToPath route =
             ""
         LoginRoute _ ->
             "login"
-        MainRoute ->
-            "main"
+        ArticlesRoute ->
+            "articles"
         NotFoundRoute ->
             "404"
