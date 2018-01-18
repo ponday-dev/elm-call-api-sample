@@ -1,7 +1,7 @@
 module Main exposing (..)
 
-import Html exposing (Html, text, div, button, a, ul, li)
-import Html.Attributes exposing (href, target)
+import Html exposing (Html, text, div, button, a, ul, li, header, h3)
+import Html.Attributes exposing (href, target, class)
 -- import Html.Events exposing (onClick)
 
 import Task
@@ -46,7 +46,10 @@ init location =
                         Nothing ->
                             ClickLink (Routing.routeToPath NotFoundRoute)
                 _ ->
-                    Noop
+                    if model.accessToken == "" then
+                        ClickLink (routeToPath TopRoute)
+                    else
+                        Noop
         cmd =
             send msg
     in
@@ -87,18 +90,33 @@ update msg model =
             model ! []
         LocationChange location ->
             let
+                checkToken =
+                    if model.accessToken /= "" then
+                        send <| ClickLink (routeToPath ArticlesRoute)
+                    else
+                        Cmd.none
                 newModel =
                     parseLocation (Just model) location
-                message =
+                cmd =
                     case newModel.route of
+                        LoginRoute _ ->
+                            checkToken
+                        TopRoute ->
+                            checkToken
                         ArticlesRoute ->
-                            GetMyItems
+                            if model.accessToken == "" then
+                                send <| ClickLink (routeToPath <| LoginRoute Nothing)
+                            else
+                                send GetMyItems
                         _ ->
-                            Noop
+                            if model.accessToken == "" then
+                                send <| ClickLink (routeToPath <| LoginRoute Nothing)
+                            else
+                                Cmd.none
             in
-                newModel ! [send message]
+                newModel ! [cmd]
         ClickLink url ->
-            model ! [newUrl url]
+            model ! [newUrl ("/" ++ url)]
         GetAccessToken code ->
             let
                 request =
@@ -149,8 +167,11 @@ view model =
 
 top: Model -> Html Msg
 top model =
-    div []
-        [ a [ href (Qiita.Endpoints.authorize Secrets.clientId "read_qiita") ] [ text "Login to Qiita" ]
+    div [ class "top" ]
+        [ a [ href (Qiita.Endpoints.authorize Secrets.clientId "read_qiita")
+            , class "login"
+            ]
+            [ text "Login to Qiita" ]
         ]
 
 
@@ -160,15 +181,23 @@ articles model =
         items =
             model.articles
                 |> List.map itemLink
-                |> ul []
+                |> ul [ class "articles__list" ]
     in
-        div [] [ items ]
+        div [ class "articles" ]
+            [ header [ class "header" ]
+                [ h3 [] [ text "あなたの記事" ]
+                ]
+            , items
+            ]
 
 
 itemLink: Qiita.My.Items.Item -> Html Msg
 itemLink article =
-    li []
-        [ a [ href article.url, target "blank" ]
+    li [ class "articles__item" ]
+        [ a [ href article.url
+            , target "blank"
+            , class "articles__link"
+            ]
             [ text article.title ]
         ]
 
